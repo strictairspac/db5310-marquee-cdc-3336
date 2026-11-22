@@ -64,6 +64,12 @@ def review_evidence(identity: int, form: ReviewForm, actor=Depends(reviewer)):
     return workflow.review(identity, form.note, actor)
 
 
+@router.get('/evidence/{identity}/trace')
+def trace_evidence(identity: int, sign_id: str, stream: str | None = None,
+                   batch: int | None = None, _=Depends(current_user)):
+    return workflow.trace(identity, sign_id, stream=stream, batch_no=batch)
+
+
 @router.get('/audit')
 def list_audit(_=Depends(current_user)):
     return workflow.recent(audit)

@@ -35,6 +35,20 @@ docker compose up -d --build --wait
 
 `SEED_DEMO=true` 启动时生成账号与一个业务样例。工作台新建档案会预填样例。可编辑表单中的数值、文本和结构化 JSON 后提交。业务说明中的原始文件是上游示例，演示数据通过表单录入。角色枚举位于后端 `src/constants/workflow.py` 与前端 `src/constants/workflow.js`。执行状态枚举也位于这两个文件，使用于队列、列表和执行详情。证据校验码是报告 JSON 按 UTF-8、键排序且省略多余空格序列化后的 SHA-256。
 
+证据详情页提供「档口牌批次追溯」：输入牌面编号（可选分区流与截止批号）即可只读查询该牌在每批结束时的文案、来源序号、事件编号与接收行，已撤牌同样可追查。接口 `GET /api/evidence/{id}/trace?sign_id=...&stream=...&batch=...` 只从已存档档案做内存重放，不重跑任务、不改报告与校验码；口径见 [BUSINESS.md](BUSINESS.md) 的「证据页批次追溯口径」。
+
+### 本地测试
+
+追溯逻辑不依赖 MySQL，可直接运行：
+
+```sh
+cd backend
+DB_DRIVER=mysql+pymysql DB_HOST=127.0.0.1 REDIS_URL=redis://127.0.0.1:6379/0 AUTH_KEY=test-key \
+  PYTHONPATH=. python3 -m unittest discover -s tests -v
+```
+
+完整 SQL 回放与事务回滚用例仍按 BUSINESS.md 的要求在独立 MySQL 8.0 schema 上运行。
+
 ## 工程结构
 
 | 服务 | 实现 |

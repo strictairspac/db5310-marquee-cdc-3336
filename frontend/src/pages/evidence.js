@@ -1,5 +1,6 @@
 import {heading, panel} from '../components/common/heading.js';
 import {entries, records} from '../components/common/records.js';
+import {bindTrace, tracePanel} from '../components/trace.js';
 import {topic} from '../constants/project.js';
 import {date, el, esc} from '../utils/dom.js';
 import {submit} from '../hooks/submit.js';
@@ -16,6 +17,7 @@ export function evidencePage(state, identity) {
   const history = state.evidence.map(row=>[`<a href="#evidence/${row.id}">执行 ${row.run_id}</a>`, esc(row.report.summary), esc(row.reviewer || '待复核')]);
   return `${heading(topic.modules[3], report.summary, `<button id="download" data-id="${current.id}">导出证据</button>`)}
     <div class="spread evidence-top"><dl class="metrics">${metrics}</dl><aside class="brief"><h2>复核签署</h2>${review}<details><summary>结果校验码</summary><code class="digest">${esc(current.digest)}</code></details></aside></div>
+    ${tracePanel(current.id, current)}
     ${sections}<details><summary>历史证据</summary>${records(['执行','结论','复核'], history)}</details>`;
 }
 
@@ -34,6 +36,7 @@ export function bindEvidence(api, update, fail) {
       setTimeout(()=>URL.revokeObjectURL(url), 1000);
     } catch (error) { fail(error); }
   });
+  bindTrace(api, identity, fail);
   submit('review-form', async data=>{
     await api(`/evidence/${identity}/review`, {method:'POST', data:{note:data.get('note')}});
     await update();

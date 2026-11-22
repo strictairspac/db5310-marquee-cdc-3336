@@ -7,7 +7,7 @@ from sqlalchemy import and_, or_, select
 from src.config.settings import cache, engine
 from src.constants.workflow import Status
 from src.models.tables import audit, cases, evidence, runs
-from src.services import domain
+from src.services import domain, trace as trace_service
 from src.utils.encoding import canonical
 from src.utils.time import utc_time
 
@@ -102,3 +102,22 @@ def review(identity, note, actor):
             raise HTTPException(409, '该证据已经复核')
         log(conn, actor, 'review', identity)
         return found(conn, evidence, identity)
+
+
+def trace(identity, sign_id, stream=None, batch_no=None):
+    """只读追溯：从档案输入与证据记录重建单块牌的批次视图。
+
+    不重跑执行、不写任何表，已签署的发布单与校验码保持不变。
+    """
+    with engine.connect() as conn:
+        record = found(conn, evidence, identity)
+        run = found(conn, runs, record['run_id'])
+        case = found(conn, cases, run['case_id'])
+    try:
+        result = trace_service.build_trace(case['payload'], sign_id, stream=stream, batch_no=batch_no)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from None
+    result['evidence_id'] = identity
+    result['run_id'] = record['run_id']
+    result['digest'] = record['digest']
+    return result
